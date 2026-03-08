@@ -87,3 +87,28 @@ ssh root@192.168.1.100
 | Prometheus | 9090 | |
 | cAdvisor | 8082 | |
 | cloudflared | N/A | Outbound-only tunnel |
+
+## Deployment
+
+- Deploy to server: `sshpass -p '<password>' scp arr-stack/deploy.sh root@192.168.1.100:/tmp/ && sshpass -p '<password>' ssh root@192.168.1.100 "bash /tmp/deploy.sh"`
+- The `.env` file must be copied to the server alongside `deploy.sh` (or already exist at `/mnt/user/appdata/<stack>/.env`).
+- After deploying, verify with: `docker ps --format 'table {{.Names}}\t{{.Status}}'`
+
+## Permission Gotchas
+
+- Never `chown -R` broad paths like `/mnt/user/appdata` or `/mnt/user/data` -- this breaks other stacks' ownership (Nextcloud=33, MariaDB=999, Paperless Postgres=999).
+- Each deploy script only chowns its own directories.
+- Nextcloud MariaDB data (`/mnt/user/appdata/nextcloud-db`) must be owned by 999:999 -- if broken, Nextcloud returns HTTP 500 with "Can't read dir" in logs.
+- Seerr (formerly Jellyseerr) runs as UID 1000, needs `init: true` and `user: "1000:1000"` in compose.
+- Prometheus runs as `nobody` (65534) -- its entire config/data tree must be owned by 65534:65534.
+
+## Unraid-Specific
+
+- cAdvisor needs `/run/docker/containerd/containerd.sock:/run/containerd/containerd.sock:ro` on Unraid (non-standard containerd socket path).
+- cAdvisor needs `--docker_only=true --store_container_labels=true` to expose container `name` labels in metrics.
+- qBittorrent v5.x enables CSRF protection by default; disable in config if Homepage widget returns ECONNRESET. Failed login attempts trigger temporary IP bans -- restart qBittorrent to clear.
+- Homepage resource widget for cache drive needs explicit `/mnt/cache:/mnt/cache:ro` volume mount and `disk: /mnt/cache` in widgets.yaml.
+
+## Git Commits
+
+- Never include `Co-Authored-By` lines in commit messages.
