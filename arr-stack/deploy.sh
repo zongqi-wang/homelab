@@ -39,7 +39,9 @@ chown -R 1000:1000 /mnt/user/appdata/jellyseerr
 echo "Phase 1 complete."
 
 echo "Starting Phase 2: Write .env + config files..."
-cp "$ENV_FILE" /mnt/user/appdata/arr-stack/.env
+if [ "$(realpath "$ENV_FILE")" != "$(realpath /mnt/user/appdata/arr-stack/.env)" ]; then
+  cp "$ENV_FILE" /mnt/user/appdata/arr-stack/.env
+fi
 
 cat > /mnt/user/appdata/prometheus/prometheus.yml <<'YAML'
 global:
@@ -267,6 +269,10 @@ services:
       - VPN_TYPE=${VPN_TYPE}
       - WIREGUARD_PRIVATE_KEY=${WIREGUARD_PRIVATE_KEY}
       - WIREGUARD_ADDRESSES=${WIREGUARD_ADDRESSES}
+      - WIREGUARD_PUBLIC_KEY=${WIREGUARD_PUBLIC_KEY}
+      - VPN_ENDPOINT_IP=${VPN_ENDPOINT_IP}
+      - VPN_ENDPOINT_PORT=${VPN_ENDPOINT_PORT}
+      - DNS_ADDRESS=${DNS_ADDRESS}
       - FIREWALL_VPN_INPUT_PORTS=8080,6881
       - FIREWALL_INPUT_PORTS=8080,6881
       - FIREWALL_OUTBOUND_SUBNETS=172.16.0.0/12,192.168.1.0/24
