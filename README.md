@@ -5,7 +5,7 @@ Infrastructure-as-code for my Unraid home server. Three Docker Compose stacks ma
 ## Architecture
 
 ```
-Unraid Server (192.168.1.100)
+Unraid Server (<LAN_HOST>)
 ├── arr-stack        Media automation, streaming, photos, observability, dashboard
 ├── cloud-stack      File sync and document management
 └── gitlab           Code hosting and CI/CD

@@ -23,7 +23,7 @@ homelab/
 
 ## Architecture
 
-The Unraid server (192.168.1.100) runs three separate Docker Compose stacks:
+The Unraid server (`<UNRAID_HOST>`) runs three separate Docker Compose stacks:
 
 1. **arr-stack** (`/mnt/user/appdata/arr-stack/`) -- Gluetun VPN, qBittorrent, SABnzbd, FlareSolverr, Prowlarr, Sonarr, Radarr, Lidarr, Bazarr, Recyclarr, Unpackerr, Jellyfin, Seerr, Immich + Redis + Postgres, cAdvisor, node-exporter, Prometheus, Grafana, Homepage dashboard, Cloudflared tunnel.
 2. **cloud-stack** (`/mnt/user/appdata/cloud-stack/`) -- Nextcloud + MariaDB, Paperless-ngx + Postgres + Redis + Gotenberg + Tika.
@@ -53,7 +53,7 @@ Homepage widget keys use `{{HOMEPAGE_VAR_*}}` template syntax -- the actual valu
 ## SSH Access
 
 ```bash
-ssh root@192.168.1.100
+ssh root@<UNRAID_HOST>
 ```
 
 ## Conventions
@@ -90,7 +90,7 @@ ssh root@192.168.1.100
 
 ## Deployment
 
-- Deploy to server: `sshpass -p '<password>' scp arr-stack/deploy.sh root@192.168.1.100:/tmp/ && sshpass -p '<password>' ssh root@192.168.1.100 "bash /tmp/deploy.sh"`
+- Deploy to server (SSH key recommended): `scp arr-stack/deploy.sh arr-stack/.env root@<UNRAID_HOST>:/tmp/ && ssh root@<UNRAID_HOST> "cp /tmp/.env /mnt/user/appdata/arr-stack/.env && bash /tmp/deploy.sh"`
 - The `.env` file must be copied to the server alongside `deploy.sh` (or already exist at `/mnt/user/appdata/<stack>/.env`).
 - After deploying, verify with: `docker ps --format 'table {{.Names}}\t{{.Status}}'`
 
