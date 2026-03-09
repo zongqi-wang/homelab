@@ -75,6 +75,9 @@ scrape_configs:
   - job_name: 'node-exporter'
     static_configs:
       - targets: ['node-exporter:9100']
+  - job_name: 'nvidia-gpu'
+    static_configs:
+      - targets: ['nvidia-gpu-exporter:9835']
 YAML
 
 cat > /mnt/user/appdata/alertmanager/alertmanager.yml <<ALERTMGR
@@ -312,6 +315,94 @@ cat > /mnt/user/appdata/grafana/dashboards/containers-overview.json <<'JSON'
   "timezone": "",
   "title": "Container Overview (IaC)",
   "uid": "container-overview-iac",
+  "version": 1,
+  "weekStart": ""
+}
+JSON
+
+cat > /mnt/user/appdata/grafana/dashboards/gpu-overview.json <<'JSON'
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "percent", "max": 100 }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "id": 1,
+      "targets": [{ "expr": "nvidia_smi_utilization_gpu_ratio * 100", "legendFormat": "{{gpu_name}}", "refId": "A" }],
+      "title": "GPU Utilization (%)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "bytes" }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "id": 2,
+      "targets": [
+        { "expr": "nvidia_smi_memory_used_bytes", "legendFormat": "Used", "refId": "A" },
+        { "expr": "nvidia_smi_memory_total_bytes", "legendFormat": "Total", "refId": "B" }
+      ],
+      "title": "GPU VRAM Usage",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "celsius" }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "id": 3,
+      "targets": [{ "expr": "nvidia_smi_temperature_gpu", "legendFormat": "{{gpu_name}}", "refId": "A" }],
+      "title": "GPU Temperature",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "watt" }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "id": 4,
+      "targets": [
+        { "expr": "nvidia_smi_power_draw_watts", "legendFormat": "Draw", "refId": "A" },
+        { "expr": "nvidia_smi_power_draw_instant_watts", "legendFormat": "Instant", "refId": "B" }
+      ],
+      "title": "GPU Power (Watts)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "percent", "max": 100 }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 },
+      "id": 5,
+      "targets": [
+        { "expr": "nvidia_smi_utilization_encoder_ratio * 100", "legendFormat": "Encoder (NVENC)", "refId": "A" },
+        { "expr": "nvidia_smi_utilization_decoder_ratio * 100", "legendFormat": "Decoder (NVDEC)", "refId": "B" }
+      ],
+      "title": "Encoder / Decoder Utilization (%)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "hertz" }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 16 },
+      "id": 6,
+      "targets": [
+        { "expr": "nvidia_smi_clocks_current_graphics_clock_hz", "legendFormat": "Graphics", "refId": "A" },
+        { "expr": "nvidia_smi_clocks_current_memory_clock_hz", "legendFormat": "Memory", "refId": "B" }
+      ],
+      "title": "GPU Clock Speeds",
+      "type": "timeseries"
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 39,
+  "style": "dark",
+  "tags": ["iac", "gpu", "nvidia"],
+  "templating": { "list": [] },
+  "time": { "from": "now-6h", "to": "now" },
+  "timezone": "",
+  "title": "GPU Overview (IaC)",
+  "uid": "gpu-overview-iac",
   "version": 1,
   "weekStart": ""
 }
@@ -687,6 +778,18 @@ services:
       - /proc:/host/proc:ro
       - /sys:/host/sys:ro
       - /:/rootfs:ro
+    restart: unless-stopped
+
+  nvidia-gpu-exporter:
+    image: utkuozdemir/nvidia_gpu_exporter:1.4.0
+    container_name: nvidia-gpu-exporter
+    labels:
+      kuma.nvidia-gpu-exporter.docker.name: nvidia-gpu-exporter
+    runtime: nvidia
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+    expose:
+      - "9835"
     restart: unless-stopped
 
   prometheus:
