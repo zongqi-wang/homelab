@@ -11,6 +11,8 @@ fi
 
 # shellcheck source=.env
 source "$ENV_FILE"
+: "${LAN_HOST:?Set LAN_HOST in .env}"
+AUTOKUMA_DEFAULT_NOTIFICATION_NAME_LIST="${AUTOKUMA_DEFAULT_NOTIFICATION_NAME_LIST:-[\"Homelab Alerts\"]}"
 
 echo "Starting Bootstrap for Nextcloud and Paperless..."
 mkdir -p /mnt/user/appdata/{nextcloud,nextcloud-db,paperless,paperless-db,paperless-redis,gotenberg,tika}
@@ -30,6 +32,9 @@ services:
   nextcloud-db:
     image: mariadb:10.6
     container_name: nextcloud-db
+    labels:
+      kuma.nextcloud-db.docker.name: nextcloud-db
+      kuma.nextcloud-db.docker.notification_name_list: "${AUTOKUMA_DEFAULT_NOTIFICATION_NAME_LIST}"
     command: --transaction-isolation=READ-COMMITTED --binlog-format=ROW
     environment:
       - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
@@ -43,6 +48,9 @@ services:
   nextcloud:
     image: nextcloud:apache
     container_name: nextcloud
+    labels:
+      kuma.nextcloud.docker.name: nextcloud
+      kuma.nextcloud.docker.notification_name_list: "${AUTOKUMA_DEFAULT_NOTIFICATION_NAME_LIST}"
     ports:
       - "8086:80"
     environment:
@@ -61,6 +69,9 @@ services:
   paperless-redis:
     image: redis:7
     container_name: paperless-redis
+    labels:
+      kuma.paperless-redis.docker.name: paperless-redis
+      kuma.paperless-redis.docker.notification_name_list: "${AUTOKUMA_DEFAULT_NOTIFICATION_NAME_LIST}"
     volumes:
       - /mnt/user/appdata/paperless-redis:/data
     restart: unless-stopped
@@ -68,6 +79,9 @@ services:
   paperless-db:
     image: postgres:15
     container_name: paperless-db
+    labels:
+      kuma.paperless-db.docker.name: paperless-db
+      kuma.paperless-db.docker.notification_name_list: "${AUTOKUMA_DEFAULT_NOTIFICATION_NAME_LIST}"
     environment:
       - POSTGRES_DB=paperless
       - POSTGRES_USER=paperless
@@ -79,6 +93,9 @@ services:
   gotenberg:
     image: gotenberg/gotenberg:8
     container_name: gotenberg
+    labels:
+      kuma.gotenberg.docker.name: gotenberg
+      kuma.gotenberg.docker.notification_name_list: "${AUTOKUMA_DEFAULT_NOTIFICATION_NAME_LIST}"
     command:
       - "gotenberg"
       - "--chromium-disable-javascript=true"
@@ -88,11 +105,17 @@ services:
   tika:
     image: apache/tika:latest
     container_name: tika
+    labels:
+      kuma.tika.docker.name: tika
+      kuma.tika.docker.notification_name_list: "${AUTOKUMA_DEFAULT_NOTIFICATION_NAME_LIST}"
     restart: unless-stopped
 
   paperless:
     image: ghcr.io/paperless-ngx/paperless-ngx:latest
     container_name: paperless
+    labels:
+      kuma.paperless.docker.name: paperless
+      kuma.paperless.docker.notification_name_list: "${AUTOKUMA_DEFAULT_NOTIFICATION_NAME_LIST}"
     ports:
       - "8000:8000"
     depends_on:
@@ -111,7 +134,7 @@ services:
       - PAPERLESS_TIKA_ENABLED=1
       - PAPERLESS_TIKA_GOTENBERG_ENDPOINT=http://gotenberg:3000
       - PAPERLESS_TIKA_ENDPOINT=http://tika:9998
-      - PAPERLESS_URL=http://192.168.1.100:8000
+      - PAPERLESS_URL=http://${LAN_HOST}:8000
       - PAPERLESS_ADMIN_USER=${PAPERLESS_ADMIN_USER}
       - PAPERLESS_ADMIN_PASSWORD=${PAPERLESS_ADMIN_PASSWORD}
       - PAPERLESS_SECRET_KEY=${PAPERLESS_SECRET_KEY}

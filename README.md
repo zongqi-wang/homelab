@@ -26,6 +26,7 @@ Media automation and home dashboard. ~25 containers.
 | Streaming | Jellyfin, Seerr |
 | Photos | Immich, Valkey, Postgres (pgvecto-rs) |
 | Observability | cAdvisor, node-exporter, Prometheus, Grafana |
+| Uptime | Uptime Kuma + AutoKuma (Docker label sync), status-page bootstrap |
 | Infrastructure | Homepage dashboard, Cloudflared tunnel |
 
 ### cloud-stack
@@ -47,7 +48,7 @@ Media automation and home dashboard. ~25 containers.
 # Clone and set up a stack
 cd arr-stack
 cp .env.example .env
-vim .env              # fill in real values
+vim .env              # fill in real values (including LAN_HOST/LAN_SUBNET, AutoKuma creds, and alert/status-page vars)
 bash deploy.sh        # bootstraps dirs, writes configs, deploys containers
 ```
 
@@ -58,6 +59,9 @@ Each stack is independent. Deploy scripts are self-contained -- copy the directo
 All sensitive values (API keys, passwords, VPN keys) live in `.env` files which are **gitignored**. Each stack has a `.env.example` template showing required variables.
 
 Homepage widget keys use the `{{HOMEPAGE_VAR_*}}` template syntax -- actual values are injected as container environment variables from the `.env` file.
+
+AutoKuma alerting is configured via `AUTOKUMA_ALERT_PROVIDER_*` and `AUTOKUMA_DEFAULT_NOTIFICATION_NAME_LIST` in `arr-stack/.env`.  
+Status page creation is bootstrapped in `arr-stack/deploy.sh` using `UPTIME_KUMA_STATUS_PAGE_*`.
 
 ## Ports
 
@@ -71,3 +75,4 @@ Homepage widget keys use the `{{HOMEPAGE_VAR_*}}` template syntax -- actual valu
 | Radarr | 7878 | GitLab | 8929 |
 | Lidarr | 8686 | Grafana | 3005 |
 | Bazarr | 6767 | Prometheus | 9090 |
+| Uptime Kuma | 3006 | cAdvisor | 8082 |
