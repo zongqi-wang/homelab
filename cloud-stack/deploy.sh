@@ -154,6 +154,11 @@ cd /mnt/user/appdata/cloud-stack
 docker compose pull
 docker compose up -d
 
+if docker ps --format '{{.Names}}' | grep -qx 'autokuma'; then
+  echo "Triggering AutoKuma resync..."
+  docker restart autokuma >/dev/null 2>&1 || true
+fi
+
 echo "Waiting for Nextcloud to initialize..."
 sleep 15
 docker exec nextcloud chown -R www-data:www-data /var/www/html/.htaccess /var/www/html/config /var/www/html/custom_apps /var/www/html/themes 2>/dev/null || true

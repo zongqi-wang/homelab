@@ -64,6 +64,11 @@ cd /mnt/user/appdata/gitlab
 docker compose pull
 docker compose up -d
 
+if docker ps --format '{{.Names}}' | grep -qx 'autokuma'; then
+  echo "Triggering AutoKuma resync..."
+  docker restart autokuma >/dev/null 2>&1 || true
+fi
+
 # Wait for Gitea to be ready
 echo "Waiting for Gitea to initialize..."
 for i in $(seq 1 30); do

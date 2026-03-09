@@ -62,6 +62,7 @@ Homepage widget keys use the `{{HOMEPAGE_VAR_*}}` template syntax -- actual valu
 
 AutoKuma alerting is configured via `AUTOKUMA_ALERT_PROVIDER_*` and `AUTOKUMA_DEFAULT_NOTIFICATION_NAME_LIST` in `arr-stack/.env`.  
 Status page creation is bootstrapped in `arr-stack/deploy.sh` using `UPTIME_KUMA_STATUS_PAGE_*`.
+Monitor creation is IaC-driven via `kuma.*` Docker labels, with deploy-time AutoKuma resync/reconciliation in the stack deploy scripts.
 
 ## Ports
 

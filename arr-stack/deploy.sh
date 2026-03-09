@@ -529,6 +529,7 @@ services:
     labels:
       kuma.jellyfin.docker.name: jellyfin
       kuma.jellyfin.docker.notification_name_list: ${AUTOKUMA_DEFAULT_NOTIFICATION_NAME_LIST}
+    runtime: nvidia
     ports:
       - "8096:8096"
       - "8920:8920"
@@ -537,6 +538,8 @@ services:
       - PGID=${PGID}
       - TZ=${TZ}
       - UMASK=${UMASK}
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=all
     volumes:
       - /mnt/user/appdata/jellyfin:/config
       - /mnt/user/data/media:/data/media
@@ -1055,7 +1058,77 @@ if [ "$QBIT_API_CODE" != "200" ]; then
   docker compose --env-file .env up -d --force-recreate qbittorrent
 fi
 
-echo "Phase 5: Bootstrapping Uptime Kuma status page..."
+echo "Phase 5: Reconciling AutoKuma monitors..."
+reconcile_autokuma_monitors() {
+  local expected_map=/tmp/autokuma-expected-map.txt
+  local expected_names=/tmp/autokuma-expected-names.txt
+  local monitor_names=/tmp/autokuma-monitor-names.txt
+  local missing_names=/tmp/autokuma-missing-names.txt
+  local monitor_name
+  local container
+  local i
+
+  if ! docker ps --format '{{.Names}}' | grep -qx 'autokuma'; then
+    echo "AutoKuma container not running; skipping monitor reconciliation."
+    return 0
+  fi
+
+  docker restart autokuma >/dev/null 2>&1 || true
+
+  for i in $(seq 1 30); do
+    if docker exec autokuma kuma monitor list >/dev/null 2>&1; then
+      break
+    fi
+    sleep 2
+  done
+
+  if ! docker exec autokuma kuma monitor list >/dev/null 2>&1; then
+    echo "Warning: AutoKuma API not ready; skipping monitor reconciliation."
+    return 0
+  fi
+
+  : > "$expected_map"
+  for container in $(docker ps --format '{{.Names}}'); do
+    monitor_name="$(docker inspect "$container" --format '{{range $k, $v := .Config.Labels}}{{printf "%s=%s\n" $k $v}}{{end}}' 2>/dev/null | awk -F= '/^kuma\..*\.docker\.name=/{print $2; exit}')"
+    if [ -n "$monitor_name" ]; then
+      printf '%s|%s\n' "$monitor_name" "$container" >> "$expected_map"
+    fi
+  done
+
+  if [ ! -s "$expected_map" ]; then
+    echo "No AutoKuma-labeled containers found; skipping monitor reconciliation."
+    return 0
+  fi
+
+  cut -d'|' -f1 "$expected_map" | sort -u > "$expected_names"
+  docker exec autokuma kuma monitor list 2>/dev/null \
+    | tr -d '\n' \
+    | grep -o '"name":"[^"]*"' \
+    | sed 's/"name":"//;s/"$//' \
+    | sort -u > "$monitor_names" || true
+  [ -f "$monitor_names" ] || : > "$monitor_names"
+
+  comm -23 "$expected_names" "$monitor_names" > "$missing_names" || true
+
+  if [ ! -s "$missing_names" ]; then
+    echo "AutoKuma monitors are in sync."
+    return 0
+  fi
+
+  echo "Missing AutoKuma monitors detected. Restarting related containers to trigger discovery..."
+  while IFS= read -r monitor_name; do
+    [ -n "$monitor_name" ] || continue
+    container="$(awk -F'|' -v n="$monitor_name" '$1==n {print $2; exit}' "$expected_map")"
+    if [ -n "$container" ]; then
+      echo "  - $monitor_name ($container)"
+      docker restart "$container" >/dev/null 2>&1 || true
+    fi
+  done < "$missing_names"
+}
+
+reconcile_autokuma_monitors
+
+echo "Phase 6: Bootstrapping Uptime Kuma status page..."
 setup_uptime_kuma_status_page() {
   local slug="${UPTIME_KUMA_STATUS_PAGE_SLUG:-default}"
   local title="${UPTIME_KUMA_STATUS_PAGE_TITLE:-Homelab Status}"
@@ -1080,7 +1153,9 @@ setup_uptime_kuma_status_page() {
   fi
 
   local public_group_list='[]'
+  local has_jq=0
   if command -v jq >/dev/null 2>&1; then
+    has_jq=1
     local monitors_json
     monitors_json="$(docker exec autokuma kuma monitor list 2>/dev/null || true)"
     if [ -n "$monitors_json" ] && printf '%s' "$monitors_json" | jq -e 'type=="array"' >/dev/null 2>&1; then
@@ -1101,7 +1176,12 @@ setup_uptime_kuma_status_page() {
       )"
     fi
   else
-    echo "Note: jq not found on host; creating status page without auto-populating monitor list."
+    echo "Note: jq not found on host."
+  fi
+
+  if [ "$has_jq" -ne 1 ] && docker exec autokuma kuma status-page get "$slug" >/dev/null 2>&1; then
+    echo "Preserving existing status page monitor groups (jq is required for auto-population)."
+    return 0
   fi
 
   local slug_escaped title_escaped description_escaped
