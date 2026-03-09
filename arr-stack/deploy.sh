@@ -146,7 +146,7 @@ groups:
           description: "Container {{ $labels.name }} is above 90% of its memory limit."
 
       - alert: ContainerCPUHigh
-        expr: (sum by (name) (rate(container_cpu_usage_seconds_total{name!=""}[5m])) / sum by (name) (container_spec_cpu_quota{name!="",container_spec_cpu_quota>0} / container_spec_cpu_period{name!="",container_spec_cpu_quota>0})) > 0.90
+        expr: (sum by (name) (rate(container_cpu_usage_seconds_total{name!=""}[5m])) / (sum by (name) (container_spec_cpu_quota{name!=""}) / sum by (name) (container_spec_cpu_period{name!=""}))) > 0.90 and sum by (name) (container_spec_cpu_quota{name!=""}) > 0
         for: 10m
         labels:
           severity: warning
