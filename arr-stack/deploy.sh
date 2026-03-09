@@ -12,6 +12,7 @@ fi
 # shellcheck source=.env
 source "$ENV_FILE"
 : "${LAN_HOST:?Set LAN_HOST in .env}"
+: "${PROMETHEUS_DISCORD_WEBHOOK:?Set PROMETHEUS_DISCORD_WEBHOOK in .env}"
 LAN_SUBNET="${LAN_SUBNET:-192.168.1.0/24}"
 
 AUTOKUMA_DEFAULT_NOTIFICATION_NAME_LIST="${AUTOKUMA_DEFAULT_NOTIFICATION_NAME_LIST:-[\"Homelab Alerts\"]}"
@@ -99,6 +100,24 @@ cat > /mnt/user/appdata/prometheus/rules/container-health.yml <<'YAML'
 groups:
   - name: container-health
     rules:
+      - alert: HostCPUUsageHigh
+        expr: (100 - (avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100)) > 90
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Host CPU usage high"
+          description: "Host {{ $labels.instance }} CPU usage has been above 90% for 10 minutes."
+
+      - alert: HostMemoryUsageHigh
+        expr: ((1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100) > 90
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Host memory usage high"
+          description: "Host {{ $labels.instance }} memory usage has been above 90% for 10 minutes."
+
       - alert: ContainerDown
         expr: time() - container_last_seen{name!=""} > 120
         for: 2m
@@ -125,6 +144,15 @@ groups:
         annotations:
           summary: "Container memory usage high"
           description: "Container {{ $labels.name }} is above 90% of its memory limit."
+
+      - alert: ContainerCPUHigh
+        expr: (sum by (name) (rate(container_cpu_usage_seconds_total{name!=""}[5m])) / sum by (name) (container_spec_cpu_quota{name!="",container_spec_cpu_quota>0} / container_spec_cpu_period{name!="",container_spec_cpu_quota>0})) > 0.90
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Container CPU usage high"
+          description: "Container {{ $labels.name }} CPU usage has been above 90% of its CPU limit for 10 minutes."
 YAML
 
 cat > /mnt/user/appdata/grafana/provisioning/datasources/prometheus.yml <<'YAML'
@@ -561,6 +589,7 @@ services:
       - HOMEPAGE_VAR_PAPERLESS_KEY=${HOMEPAGE_VAR_PAPERLESS_KEY}
       - HOMEPAGE_VAR_IMMICH_KEY=${HOMEPAGE_VAR_IMMICH_KEY}
       - HOMEPAGE_VAR_GRAFANA_PASSWORD=${HOMEPAGE_VAR_GRAFANA_PASSWORD}
+      - HOMEPAGE_VAR_GITEA_KEY=${HOMEPAGE_VAR_GITEA_KEY}
       - HOMEPAGE_VAR_WEATHER_LABEL=${HOMEPAGE_VAR_WEATHER_LABEL}
       - HOMEPAGE_VAR_WEATHER_LAT=${HOMEPAGE_VAR_WEATHER_LAT}
       - HOMEPAGE_VAR_WEATHER_LON=${HOMEPAGE_VAR_WEATHER_LON}
@@ -923,6 +952,10 @@ cat > /mnt/user/appdata/homepage/services.yaml <<'YAML'
         description: Source Control & CI/CD
         icon: gitea
         ping: http://{{HOMEPAGE_VAR_LAN_HOST}}:8929
+        widget:
+          type: gitea
+          url: http://{{HOMEPAGE_VAR_LAN_HOST}}:8929
+          key: "{{HOMEPAGE_VAR_GITEA_KEY}}"
 
 - Observability:
     - Grafana:
