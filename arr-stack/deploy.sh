@@ -327,7 +327,6 @@ services:
     container_name: gluetun
     labels:
       kuma.gluetun.docker.name: gluetun
-      kuma.gluetun.docker.notification_name_list: ${AUTOKUMA_DEFAULT_NOTIFICATION_NAME_LIST}
     cap_add:
       - NET_ADMIN
     devices:
@@ -360,7 +359,6 @@ services:
     container_name: qbittorrent
     labels:
       kuma.qbittorrent.docker.name: qbittorrent
-      kuma.qbittorrent.docker.notification_name_list: ${AUTOKUMA_DEFAULT_NOTIFICATION_NAME_LIST}
     network_mode: "service:gluetun"
     depends_on:
       - gluetun
@@ -380,7 +378,6 @@ services:
     container_name: sabnzbd
     labels:
       kuma.sabnzbd.docker.name: sabnzbd
-      kuma.sabnzbd.docker.notification_name_list: ${AUTOKUMA_DEFAULT_NOTIFICATION_NAME_LIST}
     ports:
       - "8085:8080"
     environment:
@@ -398,7 +395,6 @@ services:
     container_name: flaresolverr
     labels:
       kuma.flaresolverr.docker.name: flaresolverr
-      kuma.flaresolverr.docker.notification_name_list: ${AUTOKUMA_DEFAULT_NOTIFICATION_NAME_LIST}
     environment:
       - LOG_LEVEL=info
       - LOG_HTML=false
@@ -413,7 +409,6 @@ services:
     container_name: prowlarr
     labels:
       kuma.prowlarr.docker.name: prowlarr
-      kuma.prowlarr.docker.notification_name_list: ${AUTOKUMA_DEFAULT_NOTIFICATION_NAME_LIST}
     ports:
       - "9696:9696"
     environment:
@@ -430,7 +425,6 @@ services:
     container_name: sonarr
     labels:
       kuma.sonarr.docker.name: sonarr
-      kuma.sonarr.docker.notification_name_list: ${AUTOKUMA_DEFAULT_NOTIFICATION_NAME_LIST}
     ports:
       - "8989:8989"
     environment:
@@ -448,7 +442,6 @@ services:
     container_name: radarr
     labels:
       kuma.radarr.docker.name: radarr
-      kuma.radarr.docker.notification_name_list: ${AUTOKUMA_DEFAULT_NOTIFICATION_NAME_LIST}
     ports:
       - "7878:7878"
     environment:
@@ -466,7 +459,6 @@ services:
     container_name: lidarr
     labels:
       kuma.lidarr.docker.name: lidarr
-      kuma.lidarr.docker.notification_name_list: ${AUTOKUMA_DEFAULT_NOTIFICATION_NAME_LIST}
     ports:
       - "8686:8686"
     environment:
@@ -484,7 +476,6 @@ services:
     container_name: bazarr
     labels:
       kuma.bazarr.docker.name: bazarr
-      kuma.bazarr.docker.notification_name_list: ${AUTOKUMA_DEFAULT_NOTIFICATION_NAME_LIST}
     ports:
       - "6767:6767"
     environment:
@@ -502,7 +493,6 @@ services:
     container_name: recyclarr
     labels:
       kuma.recyclarr.docker.name: recyclarr
-      kuma.recyclarr.docker.notification_name_list: ${AUTOKUMA_DEFAULT_NOTIFICATION_NAME_LIST}
     environment:
       - TZ=${TZ}
     volumes:
@@ -514,7 +504,6 @@ services:
     container_name: unpackerr
     labels:
       kuma.unpackerr.docker.name: unpackerr
-      kuma.unpackerr.docker.notification_name_list: ${AUTOKUMA_DEFAULT_NOTIFICATION_NAME_LIST}
     environment:
       - TZ=${TZ}
       - UN_SONARR_0_URL=http://sonarr:8989
@@ -528,7 +517,6 @@ services:
     container_name: jellyfin
     labels:
       kuma.jellyfin.docker.name: jellyfin
-      kuma.jellyfin.docker.notification_name_list: ${AUTOKUMA_DEFAULT_NOTIFICATION_NAME_LIST}
     runtime: nvidia
     ports:
       - "8096:8096"
@@ -550,7 +538,6 @@ services:
     container_name: jellyseerr
     labels:
       kuma.jellyseerr.docker.name: jellyseerr
-      kuma.jellyseerr.docker.notification_name_list: ${AUTOKUMA_DEFAULT_NOTIFICATION_NAME_LIST}
     init: true
     user: "1000:1000"
     ports:
@@ -566,7 +553,6 @@ services:
     container_name: homepage
     labels:
       kuma.homepage.docker.name: homepage
-      kuma.homepage.docker.notification_name_list: ${AUTOKUMA_DEFAULT_NOTIFICATION_NAME_LIST}
     ports:
       - "3001:3000"
     environment:
@@ -610,7 +596,6 @@ services:
     container_name: immich_server
     labels:
       kuma.immich_server.docker.name: immich_server
-      kuma.immich_server.docker.notification_name_list: ${AUTOKUMA_DEFAULT_NOTIFICATION_NAME_LIST}
     image: ghcr.io/immich-app/immich-server:${IMMICH_VERSION:-release}
     mem_limit: 4g
     depends_on:
@@ -635,7 +620,6 @@ services:
     container_name: immich_machine_learning
     labels:
       kuma.immich_machine_learning.docker.name: immich_machine_learning
-      kuma.immich_machine_learning.docker.notification_name_list: ${AUTOKUMA_DEFAULT_NOTIFICATION_NAME_LIST}
     image: ghcr.io/immich-app/immich-machine-learning:${IMMICH_VERSION:-release}
     volumes:
       - /mnt/user/appdata/immich/model-cache:/cache
@@ -647,7 +631,6 @@ services:
     container_name: immich_redis
     labels:
       kuma.immich_redis.docker.name: immich_redis
-      kuma.immich_redis.docker.notification_name_list: ${AUTOKUMA_DEFAULT_NOTIFICATION_NAME_LIST}
     image: docker.io/valkey/valkey:9@sha256:546304417feac0874c3dd576e0952c6bb8f06bb4093ea0c9ca303c73cf458f63
     healthcheck:
       test: redis-cli ping || exit 1
@@ -657,7 +640,6 @@ services:
     container_name: immich_postgres
     labels:
       kuma.immich_postgres.docker.name: immich_postgres
-      kuma.immich_postgres.docker.notification_name_list: ${AUTOKUMA_DEFAULT_NOTIFICATION_NAME_LIST}
     image: ghcr.io/immich-app/postgres:14-vectorchord0.4.3-pgvectors0.2.0@sha256:bcf63357191b76a916ae5eb93464d65c07511da41e3bf7a8416db519b40b1c23
     environment:
       POSTGRES_USER: ${DB_USERNAME}
@@ -676,7 +658,6 @@ services:
     container_name: cadvisor
     labels:
       kuma.cadvisor.docker.name: cadvisor
-      kuma.cadvisor.docker.notification_name_list: ${AUTOKUMA_DEFAULT_NOTIFICATION_NAME_LIST}
     ports:
       - "8082:8080"
     command:
@@ -695,7 +676,6 @@ services:
     container_name: node-exporter
     labels:
       kuma.node-exporter.docker.name: node-exporter
-      kuma.node-exporter.docker.notification_name_list: ${AUTOKUMA_DEFAULT_NOTIFICATION_NAME_LIST}
     command:
       - '--path.procfs=/host/proc'
       - '--path.sysfs=/host/sys'
@@ -714,7 +694,6 @@ services:
     container_name: prometheus
     labels:
       kuma.prometheus.docker.name: prometheus
-      kuma.prometheus.docker.notification_name_list: ${AUTOKUMA_DEFAULT_NOTIFICATION_NAME_LIST}
     ports:
       - "9090:9090"
     volumes:
@@ -731,7 +710,6 @@ services:
     container_name: alertmanager
     labels:
       kuma.alertmanager.docker.name: alertmanager
-      kuma.alertmanager.docker.notification_name_list: ${AUTOKUMA_DEFAULT_NOTIFICATION_NAME_LIST}
     ports:
       - "9093:9093"
     volumes:
@@ -745,7 +723,6 @@ services:
     container_name: grafana
     labels:
       kuma.grafana.docker.name: grafana
-      kuma.grafana.docker.notification_name_list: ${AUTOKUMA_DEFAULT_NOTIFICATION_NAME_LIST}
     ports:
       - "3005:3000"
     environment:
@@ -761,7 +738,6 @@ services:
     container_name: uptime-kuma
     labels:
       kuma.uptime-kuma.docker.name: uptime-kuma
-      kuma.uptime-kuma.docker.notification_name_list: ${AUTOKUMA_DEFAULT_NOTIFICATION_NAME_LIST}
     ports:
       - "3006:3001"
     volumes:
@@ -774,7 +750,6 @@ services:
     container_name: autokuma
     labels:
       kuma.autokuma.docker.name: autokuma
-      kuma.autokuma.docker.notification_name_list: ${AUTOKUMA_DEFAULT_NOTIFICATION_NAME_LIST}
       kuma.homelab_alert.notification.name: Homelab Alerts
       kuma.homelab_alert.notification.active: ${AUTOKUMA_ALERT_PROVIDER_ACTIVE}
       kuma.homelab_alert.notification.config: ${AUTOKUMA_ALERT_PROVIDER_CONFIG_JSON}
@@ -796,7 +771,6 @@ services:
     container_name: cloudflared
     labels:
       kuma.cloudflared.docker.name: cloudflared
-      kuma.cloudflared.docker.notification_name_list: ${AUTOKUMA_DEFAULT_NOTIFICATION_NAME_LIST}
     network_mode: host
     env_file:
       - /mnt/user/appdata/cloudflared/.env

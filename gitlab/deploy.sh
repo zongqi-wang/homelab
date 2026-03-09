@@ -25,7 +25,6 @@ services:
     container_name: gitea
     labels:
       kuma.gitea.docker.name: gitea
-      kuma.gitea.docker.notification_name_list: '${KUMA_NOTIF}'
     environment:
       - USER_UID=99
       - USER_GID=100
@@ -48,7 +47,6 @@ services:
     container_name: act-runner
     labels:
       kuma.act-runner.docker.name: act-runner
-      kuma.act-runner.docker.notification_name_list: '${KUMA_NOTIF}'
     depends_on:
       - gitea
     environment:

@@ -34,7 +34,6 @@ services:
     container_name: nextcloud-db
     labels:
       kuma.nextcloud-db.docker.name: nextcloud-db
-      kuma.nextcloud-db.docker.notification_name_list: "${AUTOKUMA_DEFAULT_NOTIFICATION_NAME_LIST}"
     command: --transaction-isolation=READ-COMMITTED --binlog-format=ROW
     environment:
       - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
@@ -50,7 +49,6 @@ services:
     container_name: nextcloud
     labels:
       kuma.nextcloud.docker.name: nextcloud
-      kuma.nextcloud.docker.notification_name_list: "${AUTOKUMA_DEFAULT_NOTIFICATION_NAME_LIST}"
     ports:
       - "8086:80"
     environment:
@@ -71,7 +69,6 @@ services:
     container_name: paperless-redis
     labels:
       kuma.paperless-redis.docker.name: paperless-redis
-      kuma.paperless-redis.docker.notification_name_list: "${AUTOKUMA_DEFAULT_NOTIFICATION_NAME_LIST}"
     volumes:
       - /mnt/user/appdata/paperless-redis:/data
     restart: unless-stopped
@@ -81,7 +78,6 @@ services:
     container_name: paperless-db
     labels:
       kuma.paperless-db.docker.name: paperless-db
-      kuma.paperless-db.docker.notification_name_list: "${AUTOKUMA_DEFAULT_NOTIFICATION_NAME_LIST}"
     environment:
       - POSTGRES_DB=paperless
       - POSTGRES_USER=paperless
@@ -95,7 +91,6 @@ services:
     container_name: gotenberg
     labels:
       kuma.gotenberg.docker.name: gotenberg
-      kuma.gotenberg.docker.notification_name_list: "${AUTOKUMA_DEFAULT_NOTIFICATION_NAME_LIST}"
     command:
       - "gotenberg"
       - "--chromium-disable-javascript=true"
@@ -107,7 +102,6 @@ services:
     container_name: tika
     labels:
       kuma.tika.docker.name: tika
-      kuma.tika.docker.notification_name_list: "${AUTOKUMA_DEFAULT_NOTIFICATION_NAME_LIST}"
     restart: unless-stopped
 
   paperless:
@@ -115,7 +109,6 @@ services:
     container_name: paperless
     labels:
       kuma.paperless.docker.name: paperless
-      kuma.paperless.docker.notification_name_list: "${AUTOKUMA_DEFAULT_NOTIFICATION_NAME_LIST}"
     ports:
       - "8000:8000"
     depends_on:
