@@ -2,13 +2,15 @@
 
 Infrastructure-as-code for my Unraid home server. Three Docker Compose stacks managed via self-contained bash deploy scripts.
 
+![Homepage Dashboard](docs/homepage.png)
+
 ## Architecture
 
 ```
 Unraid Server (<LAN_HOST>)
 ├── arr-stack        Media automation, streaming, photos, observability, dashboard
 ├── cloud-stack      File sync and document management
-└── gitlab           Code hosting and CI/CD
+└── gitlab           Code hosting and CI/CD (Gitea + act_runner)
 ```
 
 All stacks run as Docker Compose projects under `/mnt/user/appdata/`. Media apps share a single `/mnt/user/data` mount for hardlink support. Only torrent traffic routes through VPN (qBittorrent via Gluetun). External access is outbound-only via Cloudflare Tunnel.
@@ -17,16 +19,16 @@ All stacks run as Docker Compose projects under `/mnt/user/appdata/`. Media apps
 
 ### arr-stack
 
-Media automation and home dashboard. ~25 containers.
+Media automation, home dashboard, and full observability. ~30 containers.
 
 | Category | Services |
 |----------|----------|
-| Download | Gluetun (VPN), qBittorrent, SABnzbd, FlareSolverr |
+| Download | Gluetun (WireGuard VPN), qBittorrent, SABnzbd, FlareSolverr |
 | Arr suite | Prowlarr, Sonarr, Radarr, Lidarr, Bazarr, Recyclarr, Unpackerr |
-| Streaming | Jellyfin, Seerr |
+| Streaming | Jellyfin (NVIDIA NVENC hw transcoding), Seerr |
 | Photos | Immich, Valkey, Postgres (pgvecto-rs) |
-| Observability | cAdvisor, node-exporter, Prometheus, Grafana |
-| Uptime | Uptime Kuma + AutoKuma (Docker label sync), status-page bootstrap |
+| Observability | cAdvisor, node-exporter, Prometheus, Alertmanager, Grafana |
+| Uptime | Uptime Kuma v2 + AutoKuma (Docker label-driven monitor sync) |
 | Infrastructure | Homepage dashboard, Cloudflared tunnel |
 
 ### cloud-stack
@@ -36,11 +38,11 @@ Media automation and home dashboard. ~25 containers.
 | Nextcloud + MariaDB |
 | Paperless-ngx + Postgres + Redis + Gotenberg + Tika |
 
-### gitlab
+### gitlab (Gitea)
 
 | Services |
 |----------|
-| GitLab CE + GitLab Runner |
+| Gitea (GitHub Actions-compatible CI/CD) + act_runner |
 
 ## Usage
 
@@ -48,7 +50,7 @@ Media automation and home dashboard. ~25 containers.
 # Clone and set up a stack
 cd arr-stack
 cp .env.example .env
-vim .env              # fill in real values (including LAN_HOST/LAN_SUBNET, AutoKuma creds, and alert/status-page vars)
+vim .env              # fill in real values
 bash deploy.sh        # bootstraps dirs, writes configs, deploys containers
 ```
 
@@ -58,11 +60,20 @@ Each stack is independent. Deploy scripts are self-contained -- copy the directo
 
 All sensitive values (API keys, passwords, VPN keys) live in `.env` files which are **gitignored**. Each stack has a `.env.example` template showing required variables.
 
-Homepage widget keys use the `{{HOMEPAGE_VAR_*}}` template syntax -- actual values are injected as container environment variables from the `.env` file.
+Homepage widget keys use `{{HOMEPAGE_VAR_*}}` template syntax -- actual values are injected as container environment variables from the `.env` file.
 
-AutoKuma alerting is configured via `AUTOKUMA_ALERT_PROVIDER_*` and `AUTOKUMA_DEFAULT_NOTIFICATION_NAME_LIST` in `arr-stack/.env`.  
-Status page creation is bootstrapped in `arr-stack/deploy.sh` using `UPTIME_KUMA_STATUS_PAGE_*`.
-Monitor creation is IaC-driven via `kuma.*` Docker labels, with deploy-time AutoKuma resync/reconciliation in the stack deploy scripts.
+## Observability
+
+Three layers of monitoring:
+
+| Layer | Tool | What it does |
+|-------|------|-------------|
+| **Container health** | Uptime Kuma + AutoKuma | Docker container up/down monitoring, auto-provisioned from `kuma.*` labels |
+| **Resource metrics** | Prometheus + cAdvisor + node-exporter | CPU, memory, network, OOM events (30d retention) |
+| **Alerting** | Alertmanager + Discord | Fires on OOM kills, high memory/CPU, container down |
+| **Dashboards** | Grafana | Host Overview + Container Overview (IaC-provisioned) |
+
+Alert rules: `HostCPUUsageHigh`, `HostMemoryUsageHigh`, `ContainerDown`, `ContainerOOM`, `ContainerMemoryHigh`, `ContainerCPUHigh`
 
 ## Ports
 
@@ -73,7 +84,8 @@ Monitor creation is IaC-driven via `kuma.*` Docker labels, with deploy-time Auto
 | SABnzbd | 8085 | Immich | 2283 |
 | Prowlarr | 9696 | Nextcloud | 8086 |
 | Sonarr | 8989 | Paperless-ngx | 8000 |
-| Radarr | 7878 | GitLab | 8929 |
+| Radarr | 7878 | Gitea | 8929 |
 | Lidarr | 8686 | Grafana | 3005 |
 | Bazarr | 6767 | Prometheus | 9090 |
-| Uptime Kuma | 3006 | cAdvisor | 8082 |
+| Uptime Kuma | 3006 | Alertmanager | 9093 |
+| cAdvisor | 8082 | node-exporter | 9100 |

@@ -11,23 +11,24 @@ Infrastructure-as-code for an Unraid-based home lab. Bash deploy scripts that bo
 ```
 homelab/
 ├── arr-stack/          # Media automation, streaming, photos, observability, dashboard
-│   ├── deploy.sh       # Main deploy script
+│   ├── deploy.sh       # Main deploy script (~30 containers)
 │   └── .env.example    # Template for secrets
 ├── cloud-stack/        # Nextcloud + Paperless-ngx
 │   ├── deploy.sh
 │   └── .env.example
-└── gitlab/             # GitLab CE + Runner
-    ├── deploy.sh
-    └── .env.example
+├── gitlab/             # Gitea + act_runner (replaced GitLab)
+│   ├── deploy.sh
+│   └── .env.example
+└── docs/               # Screenshots and assets
 ```
 
 ## Architecture
 
-The Unraid server (`<UNRAID_HOST>`) runs three separate Docker Compose stacks:
+The Unraid server runs three separate Docker Compose stacks:
 
-1. **arr-stack** (`/mnt/user/appdata/arr-stack/`) -- Gluetun VPN, qBittorrent, SABnzbd, FlareSolverr, Prowlarr, Sonarr, Radarr, Lidarr, Bazarr, Recyclarr, Unpackerr, Jellyfin, Seerr, Immich + Redis + Postgres, cAdvisor, node-exporter, Prometheus, Grafana, Homepage dashboard, Cloudflared tunnel.
+1. **arr-stack** (`/mnt/user/appdata/arr-stack/`) -- Gluetun VPN, qBittorrent, SABnzbd, FlareSolverr, Prowlarr, Sonarr, Radarr, Lidarr, Bazarr, Recyclarr, Unpackerr, Jellyfin (NVIDIA NVENC), Seerr, Immich + Valkey + Postgres, cAdvisor, node-exporter, Prometheus, Alertmanager, Grafana, Uptime Kuma + AutoKuma, Homepage dashboard, Cloudflared tunnel.
 2. **cloud-stack** (`/mnt/user/appdata/cloud-stack/`) -- Nextcloud + MariaDB, Paperless-ngx + Postgres + Redis + Gotenberg + Tika.
-3. **gitlab** (`/mnt/user/appdata/gitlab/`) -- GitLab CE + GitLab Runner.
+3. **gitlab** (`/mnt/user/appdata/gitlab/`) -- Gitea + act_runner (GitHub Actions-compatible CI/CD).
 
 ## Key Design Constraints
 
@@ -36,6 +37,7 @@ The Unraid server (`<UNRAID_HOST>`) runs three separate Docker Compose stacks:
 - Gluetun needs `FIREWALL_OUTBOUND_SUBNETS=172.16.0.0/12,192.168.1.0/24`.
 - Unraid ownership: `PUID=99`, `PGID=100`, `UMASK=002` for linuxserver.io containers. Exceptions: Nextcloud (33), MariaDB (999), Immich Postgres (999), Grafana (472), Prometheus (65534), Seerr (1000).
 - External access: Jellyfin via Cloudflare Tunnel (outbound-only).
+- Jellyfin uses NVIDIA GTX 1660 Ti for hardware transcoding (`runtime: nvidia`).
 
 ## Secrets Management
 
@@ -62,6 +64,7 @@ ssh root@<UNRAID_HOST>
 - Each script is self-contained: copy the directory to the server and run `deploy.sh`.
 - YAML configs use heredoc syntax. Single-quoted delimiters (`<<'YAML'`) prevent variable expansion; unquoted (`<<EOF`) allow it.
 - Edit deploy scripts directly rather than writing separate patch scripts.
+- The `gitlab/` directory name is kept for path compatibility even though it now runs Gitea.
 
 ## Service Ports
 
@@ -77,22 +80,26 @@ ssh root@<UNRAID_HOST>
 | Radarr | 7878 | |
 | Lidarr | 8686 | |
 | Bazarr | 6767 | |
-| Jellyfin | 8096 | |
+| Jellyfin | 8096 | NVIDIA NVENC hw transcoding |
 | Seerr | 5055 | |
-| Immich | 2283 | |
+| Immich | 2283 | 4GB mem_limit |
 | Nextcloud | 8086 | |
 | Paperless-ngx | 8000 | |
-| GitLab | 8929 | SSH on 2424 |
+| Gitea | 8929 | SSH on 2424 |
 | Grafana | 3005 | |
 | Prometheus | 9090 | |
+| Alertmanager | 9093 | Discord webhook |
+| Uptime Kuma | 3006 | v2 with AutoKuma |
 | cAdvisor | 8082 | |
+| node-exporter | 9100 | |
 | cloudflared | N/A | Outbound-only tunnel |
 
 ## Deployment
 
-- Deploy to server (SSH key recommended): `scp arr-stack/deploy.sh arr-stack/.env root@<UNRAID_HOST>:/tmp/ && ssh root@<UNRAID_HOST> "cp /tmp/.env /mnt/user/appdata/arr-stack/.env && bash /tmp/deploy.sh"`
-- The `.env` file must be copied to the server alongside `deploy.sh` (or already exist at `/mnt/user/appdata/<stack>/.env`).
+- Best practice: run `deploy.sh` from the arr-stack dir on the server itself (`/mnt/user/appdata/arr-stack/`).
+- Remote deploy: `scp arr-stack/deploy.sh arr-stack/.env root@<UNRAID_HOST>:/mnt/user/appdata/arr-stack/ && ssh root@<UNRAID_HOST> "cd /mnt/user/appdata/arr-stack && bash deploy.sh"`
 - After deploying, verify with: `docker ps --format 'table {{.Names}}\t{{.Status}}'`
+- Deploy script has a namespace mismatch safeguard: if Gluetun is recreated, qBittorrent is auto-recreated to rejoin the network namespace.
 
 ## Permission Gotchas
 
@@ -106,9 +113,20 @@ ssh root@<UNRAID_HOST>
 
 - cAdvisor needs `/run/docker/containerd/containerd.sock:/run/containerd/containerd.sock:ro` on Unraid (non-standard containerd socket path).
 - cAdvisor needs `--docker_only=true --store_container_labels=true` to expose container `name` labels in metrics.
-- qBittorrent v5.x enables CSRF protection by default; disable in config if Homepage widget returns ECONNRESET. Failed login attempts trigger temporary IP bans -- restart qBittorrent to clear.
+- qBittorrent v5.x: set `WebUI\Address=0.0.0.0` in config to bind IPv4 (Gluetun disables IPv6). CSRF protection can be disabled for LAN-only setups. Failed login attempts trigger temporary IP bans -- restart qBittorrent to clear.
+- qBittorrent uses `network_mode: "service:gluetun"` -- if Gluetun is recreated, qBittorrent MUST also be recreated (different network namespace = ECONNRESET). The deploy script handles this automatically.
 - Homepage resource widget for cache drive needs explicit `/mnt/cache:/mnt/cache:ro` volume mount and `disk: /mnt/cache` in widgets.yaml.
+- Uptime Kuma Docker monitors need the Docker socket mounted AND a Docker Host configured in Settings > Docker Hosts.
 
-## Git Commits
+## Observability Notes
+
+- Prometheus alert rules: avoid `metric_name>0` inside PromQL label matchers `{}` -- this is invalid syntax. Use `and metric_name > 0` as a separate clause instead.
+- AutoKuma v2 + Uptime Kuma v2: `notification_name_list` Docker labels don't work (API incompatibility). Link notifications to monitors via SQLite instead.
+- Uptime Kuma monitors created by AutoKuma need `docker_host = 1` set via SQLite: `sqlite3 /app/data/kuma.db "UPDATE monitor SET docker_host = 1 WHERE type = 'docker';"`
+- Alertmanager v0.27+ supports `discord_configs` natively -- no adapter container needed.
+
+## Git
 
 - Never include `Co-Authored-By` lines in commit messages.
+- Two remotes: `origin` (GitHub) and `gitea` (local Gitea instance).
+- Push to both: `git push origin main && git push gitea main`
