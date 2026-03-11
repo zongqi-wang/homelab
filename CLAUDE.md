@@ -92,6 +92,12 @@ ssh root@<UNRAID_HOST>
 | Uptime Kuma | 3006 | v2 with AutoKuma |
 | cAdvisor | 8082 | |
 | node-exporter | 9100 | |
+| UpSnap | 8090 | Wake-on-LAN (host network) |
+
+## Workstation MAC Addresses (for WOL)
+
+- **Ethernet**: `18:c0:4d:8c:c3:b1` (preferred for WOL)
+- **WiFi**: `c8:e2:65:fe:68:34`
 | cloudflared | N/A | Outbound-only tunnel |
 
 ## Deployment

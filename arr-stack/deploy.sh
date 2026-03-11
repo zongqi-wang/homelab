@@ -42,10 +42,11 @@ mkdir -p /mnt/user/appdata/grafana/provisioning/dashboards
 mkdir -p /mnt/user/appdata/grafana/dashboards
 mkdir -p /mnt/user/appdata/prometheus/{data,rules}
 mkdir -p /mnt/user/appdata/alertmanager
+mkdir -p /mnt/user/appdata/upsnap
 
 chown -R 99:100 /mnt/user/data/downloads /mnt/user/data/media
 chmod -R ug+rwX,o+rx /mnt/user/data/downloads /mnt/user/data/media
-for d in gluetun qbittorrent sabnzbd prowlarr sonarr radarr lidarr bazarr recyclarr unpackerr jellyfin tautulli arr-stack homepage cloudflared uptime-kuma autokuma; do
+for d in gluetun qbittorrent sabnzbd prowlarr sonarr radarr lidarr bazarr recyclarr unpackerr jellyfin tautulli arr-stack homepage cloudflared uptime-kuma autokuma upsnap; do
   chown -R 99:100 /mnt/user/appdata/$d
 done
 chown -R 999:999 /mnt/user/appdata/immich/postgres
@@ -234,12 +235,66 @@ cat > /mnt/user/appdata/grafana/dashboards/host-overview.json <<'JSON'
       "targets": [{ "expr": "sum by (instance) (rate(node_network_transmit_bytes_total{device!~\"lo|veth.*|docker.*|br.*\"}[5m]))", "legendFormat": "{{instance}} tx", "refId": "A" }],
       "title": "Host Network Transmit",
       "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "percent", "max": 100 }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 },
+      "id": 5,
+      "targets": [{ "expr": "nvidia_smi_utilization_gpu_ratio * 100", "legendFormat": "GPU", "refId": "A" }],
+      "title": "GPU Utilization (%)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "bytes" }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 16 },
+      "id": 6,
+      "targets": [
+        { "expr": "nvidia_smi_memory_used_bytes", "legendFormat": "Used", "refId": "A" },
+        { "expr": "nvidia_smi_memory_total_bytes", "legendFormat": "Total", "refId": "B" }
+      ],
+      "title": "GPU VRAM Usage",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "celsius" }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 24 },
+      "id": 7,
+      "targets": [{ "expr": "nvidia_smi_temperature_gpu", "legendFormat": "GPU Temp", "refId": "A" }],
+      "title": "GPU Temperature",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "watt" }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 24 },
+      "id": 8,
+      "targets": [
+        { "expr": "nvidia_smi_power_draw_watts", "legendFormat": "Draw", "refId": "A" },
+        { "expr": "nvidia_smi_power_draw_instant_watts", "legendFormat": "Instant", "refId": "B" }
+      ],
+      "title": "GPU Power (Watts)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "percent", "max": 100 }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 24 },
+      "id": 9,
+      "targets": [
+        { "expr": "nvidia_smi_utilization_encoder_ratio * 100", "legendFormat": "Encoder (NVENC)", "refId": "A" },
+        { "expr": "nvidia_smi_utilization_decoder_ratio * 100", "legendFormat": "Decoder (NVDEC)", "refId": "B" }
+      ],
+      "title": "NVENC / NVDEC Utilization (%)",
+      "type": "timeseries"
     }
   ],
   "refresh": "30s",
   "schemaVersion": 39,
   "style": "dark",
-  "tags": ["iac", "host", "node-exporter"],
+  "tags": ["iac", "host", "node-exporter", "gpu"],
   "templating": { "list": [] },
   "time": { "from": "now-6h", "to": "now" },
   "timezone": "",
@@ -320,93 +375,8 @@ cat > /mnt/user/appdata/grafana/dashboards/containers-overview.json <<'JSON'
 }
 JSON
 
-cat > /mnt/user/appdata/grafana/dashboards/gpu-overview.json <<'JSON'
-{
-  "annotations": { "list": [] },
-  "editable": true,
-  "id": null,
-  "links": [],
-  "panels": [
-    {
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "fieldConfig": { "defaults": { "unit": "percent", "max": 100 }, "overrides": [] },
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
-      "id": 1,
-      "targets": [{ "expr": "nvidia_smi_utilization_gpu_ratio * 100", "legendFormat": "{{gpu_name}}", "refId": "A" }],
-      "title": "GPU Utilization (%)",
-      "type": "timeseries"
-    },
-    {
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "fieldConfig": { "defaults": { "unit": "bytes" }, "overrides": [] },
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
-      "id": 2,
-      "targets": [
-        { "expr": "nvidia_smi_memory_used_bytes", "legendFormat": "Used", "refId": "A" },
-        { "expr": "nvidia_smi_memory_total_bytes", "legendFormat": "Total", "refId": "B" }
-      ],
-      "title": "GPU VRAM Usage",
-      "type": "timeseries"
-    },
-    {
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "fieldConfig": { "defaults": { "unit": "celsius" }, "overrides": [] },
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
-      "id": 3,
-      "targets": [{ "expr": "nvidia_smi_temperature_gpu", "legendFormat": "{{gpu_name}}", "refId": "A" }],
-      "title": "GPU Temperature",
-      "type": "timeseries"
-    },
-    {
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "fieldConfig": { "defaults": { "unit": "watt" }, "overrides": [] },
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
-      "id": 4,
-      "targets": [
-        { "expr": "nvidia_smi_power_draw_watts", "legendFormat": "Draw", "refId": "A" },
-        { "expr": "nvidia_smi_power_draw_instant_watts", "legendFormat": "Instant", "refId": "B" }
-      ],
-      "title": "GPU Power (Watts)",
-      "type": "timeseries"
-    },
-    {
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "fieldConfig": { "defaults": { "unit": "percent", "max": 100 }, "overrides": [] },
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 },
-      "id": 5,
-      "targets": [
-        { "expr": "nvidia_smi_utilization_encoder_ratio * 100", "legendFormat": "Encoder (NVENC)", "refId": "A" },
-        { "expr": "nvidia_smi_utilization_decoder_ratio * 100", "legendFormat": "Decoder (NVDEC)", "refId": "B" }
-      ],
-      "title": "Encoder / Decoder Utilization (%)",
-      "type": "timeseries"
-    },
-    {
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "fieldConfig": { "defaults": { "unit": "hertz" }, "overrides": [] },
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 16 },
-      "id": 6,
-      "targets": [
-        { "expr": "nvidia_smi_clocks_current_graphics_clock_hz", "legendFormat": "Graphics", "refId": "A" },
-        { "expr": "nvidia_smi_clocks_current_memory_clock_hz", "legendFormat": "Memory", "refId": "B" }
-      ],
-      "title": "GPU Clock Speeds",
-      "type": "timeseries"
-    }
-  ],
-  "refresh": "30s",
-  "schemaVersion": 39,
-  "style": "dark",
-  "tags": ["iac", "gpu", "nvidia"],
-  "templating": { "list": [] },
-  "time": { "from": "now-6h", "to": "now" },
-  "timezone": "",
-  "title": "GPU Overview (IaC)",
-  "uid": "gpu-overview-iac",
-  "version": 1,
-  "weekStart": ""
-}
-JSON
+# Remove old standalone GPU dashboard (merged into Host Overview)
+rm -f /mnt/user/appdata/grafana/dashboards/gpu-overview.json
 
 echo "Phase 2 complete."
 
@@ -880,6 +850,19 @@ services:
     command: tunnel --no-autoupdate run
     restart: unless-stopped
 
+  upsnap:
+    image: ghcr.io/seriousm4x/upsnap:latest
+    container_name: upsnap
+    labels:
+      kuma.upsnap.docker.name: upsnap
+    network_mode: host
+    environment:
+      - TZ=${TZ}
+      - UPSNAP_LISTEN_ADDRESS=0.0.0.0:8090
+    volumes:
+      - /mnt/user/appdata/upsnap:/app/pb_data
+    restart: unless-stopped
+
 EOF
 
 cat > /mnt/user/appdata/homepage/settings.yaml <<'YAML'
@@ -1037,6 +1020,13 @@ cat > /mnt/user/appdata/homepage/services.yaml <<'YAML'
           url: http://{{HOMEPAGE_VAR_LAN_HOST}}:8929
           key: "{{HOMEPAGE_VAR_GITEA_KEY}}"
 
+- Network:
+    - UpSnap:
+        href: http://{{HOMEPAGE_VAR_LAN_HOST}}:8090
+        description: Wake-on-LAN
+        icon: upsnap
+        ping: http://{{HOMEPAGE_VAR_LAN_HOST}}:8090
+
 - Observability:
     - Grafana:
         href: http://{{HOMEPAGE_VAR_LAN_HOST}}:3005
@@ -1075,6 +1065,19 @@ cat > /mnt/user/appdata/homepage/services.yaml <<'YAML'
         description: Host Metrics Endpoint
         icon: prometheus
         ping: http://{{HOMEPAGE_VAR_LAN_HOST}}:9100
+    - GPU (GTX 1660 Ti):
+        href: http://{{HOMEPAGE_VAR_LAN_HOST}}:3005/d/host-overview-iac
+        description: NVIDIA GPU Metrics
+        icon: nvidia
+        widget:
+          type: customapi
+          url: http://prometheus:9090/api/v1/query?query=nvidia_smi_temperature_gpu
+          refreshInterval: 15000
+          mappings:
+            - field: data.result.0.value.1
+              label: Temp
+              format: text
+              suffix: "°C"
 YAML
 
 cat > /mnt/user/appdata/homepage/bookmarks.yaml <<'YAML'
