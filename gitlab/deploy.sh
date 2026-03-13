@@ -33,6 +33,8 @@ services:
       - GITEA__server__HTTP_PORT=8929
       - GITEA__server__ROOT_URL=http://${LAN_HOST}:8929/
       - GITEA__actions__ENABLED=true
+      - GITEA__service__REQUIRE_SIGNIN_VIEW=true
+      - GITEA__service__DEFAULT_USER_IS_RESTRICTED=true
     ports:
       - "8929:8929"
       - "2424:22"
@@ -50,7 +52,7 @@ services:
     depends_on:
       - gitea
     environment:
-      - GITEA_INSTANCE_URL=http://gitea:8929
+      - GITEA_INSTANCE_URL=http://${LAN_HOST}:8929
       - GITEA_RUNNER_REGISTRATION_TOKEN=
     volumes:
       - /mnt/user/appdata/act-runner:/data
@@ -95,7 +97,7 @@ RUNNER_TOKEN=$(curl -sf -X POST \
 
 if [ -n "$RUNNER_TOKEN" ]; then
   docker exec act-runner act_runner register \
-    --instance http://gitea:8929 \
+    --instance http://${LAN_HOST}:8929 \
     --token "$RUNNER_TOKEN" \
     --name homelab-runner \
     --no-interactive 2>/dev/null || true
