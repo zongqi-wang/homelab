@@ -1,0 +1,42 @@
+networks:
+  default:
+    name: homelab_net
+    external: true
+
+services:
+  jellyfin:
+    image: lscr.io/linuxserver/jellyfin:latest
+    container_name: jellyfin
+    labels:
+      kuma.jellyfin.docker.name: jellyfin
+    runtime: nvidia
+    ports:
+      - "8096:8096"
+      - "8920:8920"
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+      - UMASK=${UMASK}
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=all
+    volumes:
+      - /mnt/user/appdata/jellyfin:/config
+      - /mnt/user/data/media:/data/media
+    restart: unless-stopped
+
+  jellyseerr:
+    image: ghcr.io/seerr-team/seerr:latest
+    container_name: jellyseerr
+    labels:
+      kuma.jellyseerr.docker.name: jellyseerr
+    init: true
+    user: "1000:1000"
+    ports:
+      - "5055:5055"
+    environment:
+      - TZ=${TZ}
+    volumes:
+      - /mnt/user/appdata/jellyseerr:/app/config
+    restart: unless-stopped
+

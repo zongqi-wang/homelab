@@ -1,0 +1,20 @@
+networks:
+  default:
+    name: homelab_net
+    external: true
+
+services:
+  vaultwarden:
+    image: vaultwarden/server:latest
+    container_name: vaultwarden
+    labels:
+      kuma.vaultwarden.docker.name: vaultwarden
+    environment:
+      - TZ=${TZ}
+      - WEBSOCKET_ENABLED=true
+    ports:
+      - "8222:80"
+    volumes:
+      - /mnt/user/appdata/vaultwarden:/data
+    restart: unless-stopped
+

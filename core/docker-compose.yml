@@ -1,0 +1,61 @@
+networks:
+  default:
+    name: homelab_net
+    external: true
+
+services:
+  homepage:
+    image: ghcr.io/gethomepage/homepage:latest
+    container_name: homepage
+    labels:
+      kuma.homepage.docker.name: homepage
+    ports:
+      - "3001:3000"
+    environment:
+      - TZ=${TZ}
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - HOMEPAGE_ALLOWED_HOSTS=${LAN_HOST}:3001
+      - HOMEPAGE_VAR_LAN_HOST=${LAN_HOST}
+      - HOMEPAGE_VAR_JELLYFIN_KEY=${HOMEPAGE_VAR_JELLYFIN_KEY}
+      - HOMEPAGE_VAR_JELLYSEERR_KEY=${HOMEPAGE_VAR_JELLYSEERR_KEY}
+      - HOMEPAGE_VAR_PROWLARR_KEY=${HOMEPAGE_VAR_PROWLARR_KEY}
+      - HOMEPAGE_VAR_SONARR_KEY=${HOMEPAGE_VAR_SONARR_KEY}
+      - HOMEPAGE_VAR_RADARR_KEY=${HOMEPAGE_VAR_RADARR_KEY}
+      - HOMEPAGE_VAR_LIDARR_KEY=${HOMEPAGE_VAR_LIDARR_KEY}
+      - HOMEPAGE_VAR_BAZARR_KEY=${HOMEPAGE_VAR_BAZARR_KEY}
+      - HOMEPAGE_VAR_QBIT_USERNAME=${HOMEPAGE_VAR_QBIT_USERNAME}
+      - HOMEPAGE_VAR_QBIT_PASSWORD=${HOMEPAGE_VAR_QBIT_PASSWORD}
+      - HOMEPAGE_VAR_SABNZBD_KEY=${HOMEPAGE_VAR_SABNZBD_KEY}
+      - HOMEPAGE_VAR_CF_ACCOUNT_ID=${HOMEPAGE_VAR_CF_ACCOUNT_ID}
+      - HOMEPAGE_VAR_CF_TUNNEL_ID=${HOMEPAGE_VAR_CF_TUNNEL_ID}
+      - HOMEPAGE_VAR_CF_TUNNEL_TOKEN=${HOMEPAGE_VAR_CF_TUNNEL_TOKEN}
+      - HOMEPAGE_VAR_NEXTCLOUD_KEY=${HOMEPAGE_VAR_NEXTCLOUD_KEY}
+      - HOMEPAGE_VAR_PAPERLESS_KEY=${HOMEPAGE_VAR_PAPERLESS_KEY}
+      - HOMEPAGE_VAR_IMMICH_KEY=${HOMEPAGE_VAR_IMMICH_KEY}
+      - HOMEPAGE_VAR_GRAFANA_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
+      - HOMEPAGE_VAR_GITEA_KEY=${HOMEPAGE_VAR_GITEA_KEY}
+      - HOMEPAGE_VAR_WEATHER_LABEL=${HOMEPAGE_VAR_WEATHER_LABEL}
+      - HOMEPAGE_VAR_WEATHER_LAT=${HOMEPAGE_VAR_WEATHER_LAT}
+      - HOMEPAGE_VAR_WEATHER_LON=${HOMEPAGE_VAR_WEATHER_LON}
+      - HOMEPAGE_VAR_WEATHER_TZ=${HOMEPAGE_VAR_WEATHER_TZ}
+      - HOMEPAGE_VAR_WEATHER_UNITS=${HOMEPAGE_VAR_WEATHER_UNITS}
+      - HOMEPAGE_VAR_UPTIMEKUMA_SLUG=${UPTIME_KUMA_STATUS_PAGE_SLUG}
+    volumes:
+      - /mnt/user/appdata/homepage:/app/config
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /mnt/user/data:/data:ro
+      - /mnt/cache:/mnt/cache:ro
+    restart: unless-stopped
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: cloudflared
+    labels:
+      kuma.cloudflared.docker.name: cloudflared
+    network_mode: host
+    env_file:
+      - /mnt/user/appdata/cloudflared/.env
+    command: tunnel --no-autoupdate run
+    restart: unless-stopped
+

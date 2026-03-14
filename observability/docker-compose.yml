@@ -1,0 +1,148 @@
+networks:
+  default:
+    name: homelab_net
+    external: true
+
+services:
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    container_name: cadvisor
+    labels:
+      kuma.cadvisor.docker.name: cadvisor
+    ports:
+      - "8082:8080"
+    command:
+      - '--docker_only=true'
+      - '--store_container_labels=true'
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:rw
+      - /run/docker/containerd/containerd.sock:/run/containerd/containerd.sock:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+    restart: unless-stopped
+
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: node-exporter
+    labels:
+      kuma.node-exporter.docker.name: node-exporter
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--path.rootfs=/rootfs'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($|/)'
+    ports:
+      - "9100:9100"
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    restart: unless-stopped
+
+  nvidia-gpu-exporter:
+    image: utkuozdemir/nvidia_gpu_exporter:1.4.0
+    container_name: nvidia-gpu-exporter
+    labels:
+      kuma.nvidia-gpu-exporter.docker.name: nvidia-gpu-exporter
+    runtime: nvidia
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+    expose:
+      - "9835"
+    restart: unless-stopped
+
+  glances:
+    image: nicolargo/glances:latest-full
+    container_name: glances
+    labels:
+      kuma.glances.docker.name: glances
+    runtime: nvidia
+    environment:
+      - TZ=${TZ}
+      - GLANCES_OPT=-w
+      - NVIDIA_VISIBLE_DEVICES=all
+    ports:
+      - "61208:61208"
+    pid: host
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    labels:
+      kuma.prometheus.docker.name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - /mnt/user/appdata/prometheus/data:/prometheus
+      - /mnt/user/appdata/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - /mnt/user/appdata/prometheus/rules:/etc/prometheus/rules:ro
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.retention.time=30d'
+    restart: unless-stopped
+
+  alertmanager:
+    image: prom/alertmanager:latest
+    container_name: alertmanager
+    labels:
+      kuma.alertmanager.docker.name: alertmanager
+    ports:
+      - "9093:9093"
+    volumes:
+      - /mnt/user/appdata/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    labels:
+      kuma.grafana.docker.name: grafana
+    ports:
+      - "3005:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
+    volumes:
+      - /mnt/user/appdata/grafana:/var/lib/grafana
+      - /mnt/user/appdata/grafana/provisioning:/etc/grafana/provisioning:ro
+      - /mnt/user/appdata/grafana/dashboards:/etc/grafana/dashboards:ro
+    restart: unless-stopped
+
+  uptime-kuma:
+    image: louislam/uptime-kuma:2
+    container_name: uptime-kuma
+    labels:
+      kuma.uptime-kuma.docker.name: uptime-kuma
+    ports:
+      - "3006:3001"
+    volumes:
+      - /mnt/user/appdata/uptime-kuma:/app/data
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    restart: unless-stopped
+
+  autokuma:
+    image: ghcr.io/bigboot/autokuma:latest
+    container_name: autokuma
+    labels:
+      kuma.autokuma.docker.name: autokuma
+      kuma.homelab_alert.notification.name: Homelab Alerts
+      kuma.homelab_alert.notification.active: ${AUTOKUMA_ALERT_PROVIDER_ACTIVE}
+      kuma.homelab_alert.notification.config: ${AUTOKUMA_ALERT_PROVIDER_CONFIG_JSON}
+    depends_on:
+      - uptime-kuma
+    environment:
+      - AUTOKUMA__KUMA__URL=${AUTOKUMA_KUMA_URL}
+      - AUTOKUMA__KUMA__USERNAME=${AUTOKUMA_KUMA_USERNAME}
+      - AUTOKUMA__KUMA__PASSWORD=${AUTOKUMA_KUMA_PASSWORD}
+      - 'AUTOKUMA__DEFAULT_SETTINGS=docker.docker_container: {{container_name}}'
+      - 'AUTOKUMA__DOCKER__EXCLUDE_CONTAINER_PATTERNS=^[a-f0-9]{12}_.*_'
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /mnt/user/appdata/autokuma:/data
+    restart: unless-stopped
+

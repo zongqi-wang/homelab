@@ -1,0 +1,28 @@
+- datetime:
+    text_size: xl
+    format:
+      dateStyle: short
+      timeStyle: short
+
+- openmeteo:
+    label: "{{HOMEPAGE_VAR_WEATHER_LABEL}}"
+    latitude: "{{HOMEPAGE_VAR_WEATHER_LAT}}"
+    longitude: "{{HOMEPAGE_VAR_WEATHER_LON}}"
+    timezone: "{{HOMEPAGE_VAR_WEATHER_TZ}}"
+    units: "{{HOMEPAGE_VAR_WEATHER_UNITS}}"
+    cache: 10
+
+- resources:
+    cpu: true
+    memory: true
+    label: Unraid
+- resources:
+    disk: /data
+    label: Array (Data Share)
+- resources:
+    disk: /mnt/cache
+    label: Cache Drive
+
+- search:
+    provider: duckduckgo
+    target: _blank

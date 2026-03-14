@@ -1,0 +1,56 @@
+groups:
+  - name: container-health
+    rules:
+      - alert: HostCPUUsageHigh
+        expr: (100 - (avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100)) > 90
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Host CPU usage high"
+          description: "Host {{ $labels.instance }} CPU usage has been above 90% for 10 minutes."
+
+      - alert: HostMemoryUsageHigh
+        expr: ((1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100) > 90
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Host memory usage high"
+          description: "Host {{ $labels.instance }} memory usage has been above 90% for 10 minutes."
+
+      - alert: ContainerDown
+        expr: time() - container_last_seen{name!=""} > 120
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Container appears down"
+          description: "Container {{ $labels.name }} has not been seen for over 2 minutes."
+
+      - alert: ContainerOOM
+        expr: increase(container_oom_events_total{name!=""}[10m]) > 0
+        for: 0m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Container OOM detected"
+          description: "Container {{ $labels.name }} has experienced at least one OOM kill in the last 10 minutes."
+
+      - alert: ContainerMemoryHigh
+        expr: (container_memory_working_set_bytes{name!=""} / container_spec_memory_limit_bytes{name!=""}) > 0.90 and container_spec_memory_limit_bytes{name!=""} > 0
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Container memory usage high"
+          description: "Container {{ $labels.name }} is above 90% of its memory limit."
+
+      - alert: ContainerCPUHigh
+        expr: (sum by (name) (rate(container_cpu_usage_seconds_total{name!=""}[5m])) / (sum by (name) (container_spec_cpu_quota{name!=""}) / sum by (name) (container_spec_cpu_period{name!=""}))) > 0.90 and sum by (name) (container_spec_cpu_quota{name!=""}) > 0
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Container CPU usage high"
+          description: "Container {{ $labels.name }} CPU usage has been above 90% of its CPU limit for 10 minutes."
