@@ -191,14 +191,3 @@
         description: Host Metrics Endpoint
         icon: prometheus
         ping: http://{{HOMEPAGE_VAR_LAN_HOST}}:9100
-    - Glances:
-        href: http://{{HOMEPAGE_VAR_LAN_HOST}}:61208
-        description: System Metrics
-        icon: glances
-        widget:
-          type: glances
-          url: http://glances:61208
-          env:
-            - cpu
-            - memory
-            - gpu
