@@ -1,3 +1,45 @@
+-  :
+    - System:
+        widget:
+          type: glances
+          url: http://{{HOMEPAGE_VAR_LAN_HOST}}:61208
+          metric: info
+          version: 4
+    - CPU:
+        widget:
+          type: glances
+          url: http://{{HOMEPAGE_VAR_LAN_HOST}}:61208
+          metric: cpu
+          version: 4
+    - Memory:
+        widget:
+          type: glances
+          url: http://{{HOMEPAGE_VAR_LAN_HOST}}:61208
+          metric: memory
+          version: 4
+    - Processes:
+        widget:
+          type: glances
+          url: http://{{HOMEPAGE_VAR_LAN_HOST}}:61208
+          metric: process
+          version: 4
+    - Containers:
+        widget:
+          type: glances
+          url: http://{{HOMEPAGE_VAR_LAN_HOST}}:61208
+          metric: containers
+          version: 4
+    - GPU:
+        widget:
+          type: customapi
+          url: http://prometheus:9090/api/v1/query?query=nvidia_smi_utilization_gpu_ratio*100
+          refreshInterval: 15000
+          mappings:
+            - field: data.result.0.value.1
+              label: GPU
+              format: text
+              suffix: "%"
+
 - Core:
     - Unraid:
         href: http://{{HOMEPAGE_VAR_LAN_HOST}}
@@ -189,31 +231,3 @@
         description: Host Metrics Endpoint
         icon: prometheus
         ping: http://{{HOMEPAGE_VAR_LAN_HOST}}:9100
-
-- Dashboards:
-    - Host Metrics:
-        icon: grafana
-        href: http://{{HOMEPAGE_VAR_LAN_HOST}}:3005/d/host-overview-iac/host-overview
-        description: System Dashboard
-        widget:
-          type: customapi
-          url: http://prometheus:9090/api/v1/query?query=nvidia_smi_utilization_gpu_ratio*100
-          refreshInterval: 15000
-          mappings:
-            - field: data.result.0.value.1
-              label: GPU Util
-              format: text
-              suffix: "%"
-    - GPU Metrics:
-        icon: nvidia
-        href: http://{{HOMEPAGE_VAR_LAN_HOST}}:3005/d/host-overview-iac/host-overview
-        description: GTX 1660 Ti Stats
-        widget:
-          type: customapi
-          url: http://prometheus:9090/api/v1/query?query=nvidia_smi_temperature_gpu
-          refreshInterval: 15000
-          mappings:
-            - field: data.result.0.value.1
-              label: Temp
-              format: text
-              suffix: "°C"

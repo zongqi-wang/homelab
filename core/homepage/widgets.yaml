@@ -18,18 +18,10 @@
     label: Unraid
 - resources:
     disk: /data
-    label: Array (Data Share)
+    label: Array
 - resources:
     disk: /mnt/cache
-    label: Cache Drive
-
+    label: Cache
 - search:
     provider: duckduckgo
     target: _blank
-
-- glances:
-    env:
-      - cpu
-      - memory
-      - gpu:0
-    url: http://glances:61208
