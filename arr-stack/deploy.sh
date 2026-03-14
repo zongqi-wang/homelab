@@ -762,6 +762,23 @@ services:
       - "9835"
     restart: unless-stopped
 
+  glances:
+    image: nicolargo/glances:latest-full
+    container_name: glances
+    labels:
+      kuma.glances.docker.name: glances
+    runtime: nvidia
+    environment:
+      - TZ=${TZ}
+      - GLANCES_OPT=-w
+      - NVIDIA_VISIBLE_DEVICES=all
+    ports:
+      - "61208:61208"
+    pid: host
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    restart: unless-stopped
+
   prometheus:
     image: prom/prometheus:latest
     container_name: prometheus
@@ -1066,19 +1083,17 @@ cat > /mnt/user/appdata/homepage/services.yaml <<'YAML'
         description: Host Metrics Endpoint
         icon: prometheus
         ping: http://{{HOMEPAGE_VAR_LAN_HOST}}:9100
-    - GPU (GTX 1660 Ti):
-        href: http://{{HOMEPAGE_VAR_LAN_HOST}}:3005/d/host-overview-iac
-        description: NVIDIA GPU Metrics
-        icon: nvidia
+    - Glances:
+        href: http://{{HOMEPAGE_VAR_LAN_HOST}}:61208
+        description: System Metrics
+        icon: glances
         widget:
-          type: customapi
-          url: http://prometheus:9090/api/v1/query?query=nvidia_smi_temperature_gpu
-          refreshInterval: 15000
-          mappings:
-            - field: data.result.0.value.1
-              label: Temp
-              format: text
-              suffix: "°C"
+          type: glances
+          url: http://glances:61208
+          env:
+            - cpu
+            - memory
+            - gpu
 YAML
 
 cat > /mnt/user/appdata/homepage/bookmarks.yaml <<'YAML'
