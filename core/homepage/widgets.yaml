@@ -26,3 +26,10 @@
 - search:
     provider: duckduckgo
     target: _blank
+
+- glances:
+    env:
+      - cpu
+      - memory
+      - gpu:0
+    url: http://glances:61208
