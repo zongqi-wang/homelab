@@ -90,9 +90,9 @@ ssh root@<UNRAID_HOST>
 | Prometheus | 9090 | |
 | Alertmanager | 9093 | Discord webhook |
 | Uptime Kuma | 3006 | v2 with AutoKuma |
+| Vaultwarden | 8222 | Password Manager |
 | cAdvisor | 8082 | |
 | node-exporter | 9100 | |
-| UpSnap | 8090 | Wake-on-LAN (host network) |
 
 ## Workstation MAC Addresses (for WOL)
 

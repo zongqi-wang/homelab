@@ -34,6 +34,7 @@ mkdir -p /mnt/user/appdata/homepage
 mkdir -p /mnt/user/appdata/cloudflared
 mkdir -p /mnt/user/appdata/uptime-kuma
 mkdir -p /mnt/user/appdata/autokuma
+mkdir -p /mnt/user/appdata/vaultwarden
 mkdir -p /mnt/user/data/photos/library
 mkdir -p /mnt/user/appdata/immich/{postgres,model-cache}
 mkdir -p /mnt/user/appdata/grafana
@@ -42,11 +43,10 @@ mkdir -p /mnt/user/appdata/grafana/provisioning/dashboards
 mkdir -p /mnt/user/appdata/grafana/dashboards
 mkdir -p /mnt/user/appdata/prometheus/{data,rules}
 mkdir -p /mnt/user/appdata/alertmanager
-mkdir -p /mnt/user/appdata/upsnap
 
 chown -R 99:100 /mnt/user/data/downloads /mnt/user/data/media
 chmod -R ug+rwX,o+rx /mnt/user/data/downloads /mnt/user/data/media
-for d in gluetun qbittorrent sabnzbd prowlarr sonarr radarr lidarr bazarr recyclarr unpackerr jellyfin tautulli arr-stack homepage cloudflared uptime-kuma autokuma upsnap; do
+for d in gluetun qbittorrent sabnzbd prowlarr sonarr radarr lidarr bazarr recyclarr unpackerr jellyfin tautulli arr-stack homepage cloudflared uptime-kuma autokuma vaultwarden; do
   chown -R 99:100 /mnt/user/appdata/$d
 done
 chown -R 999:999 /mnt/user/appdata/immich/postgres
@@ -638,14 +638,14 @@ services:
       - HOMEPAGE_VAR_NEXTCLOUD_KEY=${HOMEPAGE_VAR_NEXTCLOUD_KEY}
       - HOMEPAGE_VAR_PAPERLESS_KEY=${HOMEPAGE_VAR_PAPERLESS_KEY}
       - HOMEPAGE_VAR_IMMICH_KEY=${HOMEPAGE_VAR_IMMICH_KEY}
-      - HOMEPAGE_VAR_GRAFANA_PASSWORD=${HOMEPAGE_VAR_GRAFANA_PASSWORD}
+      - HOMEPAGE_VAR_GRAFANA_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
       - HOMEPAGE_VAR_GITEA_KEY=${HOMEPAGE_VAR_GITEA_KEY}
       - HOMEPAGE_VAR_WEATHER_LABEL=${HOMEPAGE_VAR_WEATHER_LABEL}
       - HOMEPAGE_VAR_WEATHER_LAT=${HOMEPAGE_VAR_WEATHER_LAT}
       - HOMEPAGE_VAR_WEATHER_LON=${HOMEPAGE_VAR_WEATHER_LON}
       - HOMEPAGE_VAR_WEATHER_TZ=${HOMEPAGE_VAR_WEATHER_TZ}
       - HOMEPAGE_VAR_WEATHER_UNITS=${HOMEPAGE_VAR_WEATHER_UNITS}
-      - HOMEPAGE_VAR_UPTIMEKUMA_SLUG=${HOMEPAGE_VAR_UPTIMEKUMA_SLUG}
+      - HOMEPAGE_VAR_UPTIMEKUMA_SLUG=${UPTIME_KUMA_STATUS_PAGE_SLUG}
     volumes:
       - /mnt/user/appdata/homepage:/app/config
       - /var/run/docker.sock:/var/run/docker.sock:ro
@@ -850,17 +850,18 @@ services:
     command: tunnel --no-autoupdate run
     restart: unless-stopped
 
-  upsnap:
-    image: ghcr.io/seriousm4x/upsnap:latest
-    container_name: upsnap
+  vaultwarden:
+    image: vaultwarden/server:latest
+    container_name: vaultwarden
     labels:
-      kuma.upsnap.docker.name: upsnap
-    network_mode: host
+      kuma.vaultwarden.docker.name: vaultwarden
     environment:
       - TZ=${TZ}
-      - UPSNAP_LISTEN_ADDRESS=0.0.0.0:8090
+      - WEBSOCKET_ENABLED=true
+    ports:
+      - "8222:80"
     volumes:
-      - /mnt/user/appdata/upsnap:/app/pb_data
+      - /mnt/user/appdata/vaultwarden:/data
     restart: unless-stopped
 
 EOF
@@ -872,6 +873,13 @@ headerStyle: boxed
 YAML
 
 cat > /mnt/user/appdata/homepage/services.yaml <<'YAML'
+- Security:
+    - Vaultwarden:
+        href: http://{{HOMEPAGE_VAR_LAN_HOST}}:8222
+        description: Password Manager
+        icon: vaultwarden
+        ping: http://{{HOMEPAGE_VAR_LAN_HOST}}:8222
+
 - Core:
     - Unraid:
         href: http://{{HOMEPAGE_VAR_LAN_HOST}}
@@ -1019,13 +1027,6 @@ cat > /mnt/user/appdata/homepage/services.yaml <<'YAML'
           type: gitea
           url: http://{{HOMEPAGE_VAR_LAN_HOST}}:8929
           key: "{{HOMEPAGE_VAR_GITEA_KEY}}"
-
-- Network:
-    - UpSnap:
-        href: http://{{HOMEPAGE_VAR_LAN_HOST}}:8090
-        description: Wake-on-LAN
-        icon: upsnap
-        ping: http://{{HOMEPAGE_VAR_LAN_HOST}}:8090
 
 - Observability:
     - Grafana:

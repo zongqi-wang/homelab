@@ -18,7 +18,7 @@ mkdir -p /mnt/user/appdata/gitea
 mkdir -p /mnt/user/appdata/act-runner
 
 KUMA_NOTIF=$(echo "$AUTOKUMA_DEFAULT_NOTIFICATION_NAME_LIST" | sed "s/'/\\\\'/g")
-cat > /mnt/user/appdata/gitlab/docker-compose.yml <<YML
+cat > /mnt/user/appdata/gitea/docker-compose.yml <<YML
 services:
   gitea:
     image: gitea/gitea:latest
@@ -60,7 +60,7 @@ services:
     restart: unless-stopped
 YML
 
-cd /mnt/user/appdata/gitlab
+cd /mnt/user/appdata/gitea
 docker compose pull
 docker compose up -d
 
