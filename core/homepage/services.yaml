@@ -193,13 +193,27 @@
 - Dashboards:
     - Host Metrics:
         icon: grafana
+        href: http://{{HOMEPAGE_VAR_LAN_HOST}}:3005/d/host-overview-iac/host-overview
+        description: System Dashboard
         widget:
-          type: iframe
-          src: http://{{HOMEPAGE_VAR_LAN_HOST}}:3005/d/host-overview-iac/host-overview?orgId=1&kiosk=tv&refresh=30s
-          classes: h-96 w-full
-    - Container Metrics:
-        icon: grafana
+          type: customapi
+          url: http://prometheus:9090/api/v1/query?query=nvidia_smi_utilization_gpu_ratio*100
+          refreshInterval: 15000
+          mappings:
+            - field: data.result.0.value.1
+              label: GPU Util
+              format: text
+              suffix: "%"
+    - GPU Metrics:
+        icon: nvidia
+        href: http://{{HOMEPAGE_VAR_LAN_HOST}}:3005/d/host-overview-iac/host-overview
+        description: GTX 1660 Ti Stats
         widget:
-          type: iframe
-          src: http://{{HOMEPAGE_VAR_LAN_HOST}}:3005/d/container-overview-iac/container-overview?orgId=1&kiosk=tv&refresh=30s
-          classes: h-96 w-full
+          type: customapi
+          url: http://prometheus:9090/api/v1/query?query=nvidia_smi_temperature_gpu
+          refreshInterval: 15000
+          mappings:
+            - field: data.result.0.value.1
+              label: Temp
+              format: text
+              suffix: "°C"
