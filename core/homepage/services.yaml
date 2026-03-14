@@ -31,14 +31,10 @@
           version: 4
     - GPU:
         widget:
-          type: customapi
-          url: http://prometheus:9090/api/v1/query?query=nvidia_smi_utilization_gpu_ratio*100
-          refreshInterval: 15000
-          mappings:
-            - field: data.result.0.value.1
-              label: GPU
-              format: text
-              suffix: "%"
+          type: glances
+          url: http://{{HOMEPAGE_VAR_LAN_HOST}}:61208
+          metric: gpu:nvidia0
+          version: 4
 
 - Core:
     - Unraid:
