@@ -1,11 +1,3 @@
 title: Home Server
 color: slate
 headerStyle: boxed
-
-layout:
-  Search:
-    style: row
-    columns: 1
-   :
-    style: row
-    columns: 3

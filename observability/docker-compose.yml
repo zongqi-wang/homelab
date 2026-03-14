@@ -51,27 +51,6 @@ services:
       - "9835"
     restart: unless-stopped
 
-  glances:
-    image: nicolargo/glances:ubuntu-latest-full
-    container_name: glances
-    labels:
-      kuma.glances.docker.name: glances
-    runtime: nvidia
-    environment:
-      - TZ=${TZ}
-      - GLANCES_OPT=-w
-      - NVIDIA_VISIBLE_DEVICES=all
-      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
-    ports:
-      - "61208:61208"
-    pid: host
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      - /:/rootfs:ro
-      - /sys:/sys:ro
-      - /usr/lib64/libnvidia-ml.so.1:/usr/lib/libnvidia-ml.so.1:ro
-    restart: unless-stopped
-
   prometheus:
     image: prom/prometheus:latest
     container_name: prometheus
