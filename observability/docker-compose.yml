@@ -19,6 +19,7 @@ services:
       - /var/run:/var/run:rw
       - /sys:/sys:ro
       - /var/lib/docker/:/var/lib/docker:ro
+      - /run/docker/containerd/containerd.sock:/run/containerd/containerd.sock:ro
     restart: unless-stopped
 
   node-exporter:

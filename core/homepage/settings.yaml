@@ -1,3 +1,17 @@
 title: Home Server
 color: slate
 headerStyle: boxed
+
+layout:
+  Media:
+    style: columns
+  Automation:
+    style: columns
+  Personal Cloud:
+    style: columns
+  Core:
+    style: columns
+  Download:
+    style: columns
+  Observability:
+    style: columns

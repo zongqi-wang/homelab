@@ -23,6 +23,7 @@ services:
     volumes:
       - /mnt/user/appdata/jellyfin:/config
       - /mnt/user/data/media:/data/media
+      - /mnt/user/data/transcodes:/config/cache/transcodes
     restart: unless-stopped
 
   jellyseerr:
@@ -38,5 +39,51 @@ services:
       - TZ=${TZ}
     volumes:
       - /mnt/user/appdata/jellyseerr:/app/config
+    restart: unless-stopped
+
+  tdarr:
+    image: ghcr.io/haveagitgat/tdarr:latest
+    container_name: tdarr
+    labels:
+      kuma.tdarr.docker.name: tdarr
+    ports:
+      - "8265:8265"
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+      - UMASK=${UMASK}
+      - serverIP=0.0.0.0
+      - serverPort=8266
+      - webUIPort=8265
+      - internalNode=false
+    volumes:
+      - /mnt/user/appdata/tdarr/server:/app/server
+      - /mnt/user/appdata/tdarr/configs:/app/configs
+      - /mnt/user/appdata/tdarr/logs:/app/logs
+      - /mnt/user/data/media:/media
+    restart: unless-stopped
+
+  tdarr-node:
+    image: ghcr.io/haveagitgat/tdarr_node:latest
+    container_name: tdarr-node
+    labels:
+      kuma.tdarr-node.docker.name: tdarr-node
+    runtime: nvidia
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+      - UMASK=${UMASK}
+      - nodeName=UnraidNode
+      - serverIP=tdarr
+      - serverPort=8266
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=all
+    volumes:
+      - /mnt/user/appdata/tdarr/configs:/app/configs
+      - /mnt/user/appdata/tdarr/logs:/app/logs
+      - /mnt/user/appdata/tdarr/transcode_cache:/temp
+      - /mnt/user/data/media:/media
     restart: unless-stopped
 

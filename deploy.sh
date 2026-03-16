@@ -18,12 +18,14 @@ echo "Starting Phase 1: Bootstrap Directories..."
 mkdir -p /mnt/user/data/downloads/torrents/{incomplete,complete}
 mkdir -p /mnt/user/data/downloads/usenet/{incomplete,complete}
 mkdir -p /mnt/user/data/media/{movies,tv,anime,music}
+mkdir -p /mnt/user/data/transcodes
 mkdir -p /mnt/user/data/photos/library
 mkdir -p /mnt/user/data/nextcloud
 mkdir -p /mnt/user/data/documents/{consume,export}
 
 # Appdata folders
 mkdir -p /mnt/user/appdata/{gluetun,qbittorrent,sabnzbd,prowlarr,sonarr,radarr,lidarr,bazarr,recyclarr,unpackerr,jellyfin,jellyseerr,node-exporter,homepage,cloudflared,uptime-kuma,autokuma,vaultwarden,alertmanager}
+mkdir -p /mnt/user/appdata/tdarr/{server,configs,logs,transcode_cache}
 mkdir -p /mnt/user/appdata/immich/{postgres,model-cache}
 mkdir -p /mnt/user/appdata/grafana/{provisioning/datasources,provisioning/dashboards,dashboards}
 mkdir -p /mnt/user/appdata/prometheus/{data,rules}
@@ -35,7 +37,7 @@ chown -R 99:100 /mnt/user/data/downloads /mnt/user/data/media /mnt/user/data/pho
 chmod -R ug+rwX,o+rx /mnt/user/data/downloads /mnt/user/data/media
 
 # 99:100 for linuxserver containers
-for d in gluetun qbittorrent sabnzbd prowlarr sonarr radarr lidarr bazarr recyclarr unpackerr jellyfin uptime-kuma autokuma vaultwarden cloudflared homepage; do
+for d in gluetun qbittorrent sabnzbd prowlarr sonarr radarr lidarr bazarr recyclarr unpackerr jellyfin uptime-kuma autokuma vaultwarden cloudflared homepage tdarr; do
   chown -R 99:100 "/mnt/user/appdata/$d"
 done
 

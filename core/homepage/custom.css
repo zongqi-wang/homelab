@@ -1,0 +1,6 @@
+/* Force 3 service group columns on large screens (overrides Tailwind's xl:basis-1/4) */
+@media (min-width: 1280px) {
+  .xl\:basis-1\/4 {
+    flex-basis: 33.333% !important;
+  }
+}
