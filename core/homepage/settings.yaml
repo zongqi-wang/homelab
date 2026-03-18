@@ -5,13 +5,11 @@ headerStyle: boxed
 layout:
   Media:
     style: columns
-  Automation:
+  Downloads:
     style: columns
-  Personal Cloud:
+  Cloud:
     style: columns
-  Core:
+  System:
     style: columns
-  Download:
-    style: columns
-  Observability:
+  Background:
     style: columns

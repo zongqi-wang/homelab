@@ -23,7 +23,7 @@ services:
     volumes:
       - /mnt/user/appdata/jellyfin:/config
       - /mnt/user/data/media:/data/media
-      - /mnt/user/data/transcodes:/config/cache/transcodes
+      - /mnt/user/appdata/jellyfin/cache/transcodes:/config/cache/transcodes
     restart: unless-stopped
 
   jellyseerr:
@@ -48,15 +48,18 @@ services:
       kuma.tdarr.docker.name: tdarr
     ports:
       - "8265:8265"
+      - "8266:8266"
     environment:
       - PUID=${PUID}
       - PGID=${PGID}
       - TZ=${TZ}
-      - UMASK=${UMASK}
+      - UMASK_SET=${UMASK}
       - serverIP=0.0.0.0
       - serverPort=8266
       - webUIPort=8265
       - internalNode=false
+      - inContainer=true
+      - ffmpegVersion=7
     volumes:
       - /mnt/user/appdata/tdarr/server:/app/server
       - /mnt/user/appdata/tdarr/configs:/app/configs
@@ -69,15 +72,22 @@ services:
     container_name: tdarr-node
     labels:
       kuma.tdarr-node.docker.name: tdarr-node
+    network_mode: service:tdarr
     runtime: nvidia
     environment:
       - PUID=${PUID}
       - PGID=${PGID}
       - TZ=${TZ}
-      - UMASK=${UMASK}
+      - UMASK_SET=${UMASK}
       - nodeName=UnraidNode
-      - serverIP=tdarr
+      - serverIP=0.0.0.0
       - serverPort=8266
+      - inContainer=true
+      - ffmpegVersion=7
+      - transcodegpuWorkers=1
+      - transcodecpuWorkers=2
+      - healthcheckgpuWorkers=1
+      - healthcheckcpuWorkers=1
       - NVIDIA_VISIBLE_DEVICES=all
       - NVIDIA_DRIVER_CAPABILITIES=all
     volumes:

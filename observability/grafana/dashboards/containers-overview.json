@@ -30,7 +30,7 @@
       "fieldConfig": { "defaults": { "unit": "Bps" }, "overrides": [] },
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
       "id": 3,
-      "targets": [{ "expr": "sum by (name) (rate(container_network_receive_bytes_total{name!=\"\"}[5m]))", "legendFormat": "{{name}} rx", "refId": "A" }],
+      "targets": [{ "expr": "sum by (name) (rate(container_network_receive_bytes_total{name!=\"\",name!=\"cloudflared\"}[5m]))", "legendFormat": "{{name}} rx", "refId": "A" }],
       "title": "Container Network Receive",
       "type": "timeseries"
     },
@@ -39,7 +39,7 @@
       "fieldConfig": { "defaults": { "unit": "Bps" }, "overrides": [] },
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
       "id": 4,
-      "targets": [{ "expr": "sum by (name) (rate(container_network_transmit_bytes_total{name!=\"\"}[5m]))", "legendFormat": "{{name}} tx", "refId": "A" }],
+      "targets": [{ "expr": "sum by (name) (rate(container_network_transmit_bytes_total{name!=\"\",name!=\"cloudflared\"}[5m]))", "legendFormat": "{{name}} tx", "refId": "A" }],
       "title": "Container Network Transmit",
       "type": "timeseries"
     },

@@ -86,3 +86,21 @@ services:
       - "8191:8191"
     restart: unless-stopped
 
+  makemkv:
+    image: jlesage/makemkv
+    container_name: makemkv
+    labels:
+      kuma.makemkv.docker.name: makemkv
+    ports:
+      - "5800:5800"
+    environment:
+      - USER_ID=${PUID}
+      - GROUP_ID=${PGID}
+      - TZ=${TZ}
+      - KEEP_APP_RUNNING=1
+      - ENABLE_CJK_FONT=1
+    volumes:
+      - /mnt/user/appdata/makemkv:/config:rw
+      - /mnt/user/data/media/tv:/storage:rw
+    restart: unless-stopped
+
